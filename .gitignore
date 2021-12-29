@@ -1,0 +1,15 @@
+# dependencies
+/node_modules
+config.env
+
+# IDEs and editors
+.eslintrc.json
+.prettierrc
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
