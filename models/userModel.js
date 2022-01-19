@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const mongoose = require('mongoose');
-const slugify = require('slugify');
+// const slugify = require('slugify');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 
@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please tell us your name!'],
   },
-  slug: String,
+  // slug: String,
   email: {
     type: String,
     required: [true, 'Please tell us your email'],
@@ -50,18 +50,11 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-userSchema.pre('save', function (next) {
-  if (!this.isModified('password') || this.isNew) return next();
-
-  this.passwordChangedAt = Date.now() - 1000;
-  next();
-});
-
 // Document Middleware: runs before .save() and .create() methods and not before .update()
-userSchema.pre('save', function (next) {
-  this.slug = slugify(this.name, { lower: true });
-  next();
-});
+// userSchema.pre('save', function (next) {
+//   this.slug = slugify(this.name, { lower: true });
+//   next();
+// });
 
 userSchema.pre('save', async function (next) {
   // Only run this function if password was actually modified
@@ -72,6 +65,13 @@ userSchema.pre('save', async function (next) {
 
   // Delete passwordConfirm field
   this.passwordConfirm = undefined;
+  next();
+});
+
+userSchema.pre('save', function (next) {
+  if (!this.isModified('password') || this.isNew) return next();
+
+  this.passwordChangedAt = Date.now() - 1000;
   next();
 });
 
