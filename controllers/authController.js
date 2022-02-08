@@ -9,7 +9,7 @@ const sendEmail = require('../utils/email');
 
 // eslint-disable-next-line arrow-body-style
 const signToken = (id) => {
-  return jwt.sign({ id: id }, process.env.JWT_SECRET, {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
@@ -48,8 +48,6 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
-    passwordChangedAt: req.body.passwordChangedAt,
-    role: req.body.role,
   });
 
   createSendToken(newUser, 201, res);
@@ -60,7 +58,7 @@ exports.login = catchAsync(async (req, res, next) => {
 
   // Check if email and password exist
   if (!email || !password) {
-    return next(new AppError('Please provide email and password', 400));
+    return next(new AppError('Please provide email and password!', 400));
   }
 
   // Check if user exists and password is correct
@@ -74,6 +72,16 @@ exports.login = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
+exports.logout = (req, res) => {
+  res.cookie('jwt', 'loggedout', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+  });
+  res.status(200).json({
+    status: 'success',
+  });
+};
+
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
   // Getting token and check if its there
@@ -82,33 +90,69 @@ exports.protect = catchAsync(async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies.jwt) {
+    token = req.cookies.jwt;
   }
 
-  if (!token)
+  if (!token) {
     return next(
       new AppError('You are not logged in! Please log in to get access.', 401)
     );
+  }
 
   // Verifying token
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
   // Check if user still exists
   const currentUser = await User.findById(decoded.id);
-  if (!currentUser)
+  if (!currentUser) {
     return next(
-      new AppError('The user belonging to token does not exists!', 401)
+      new AppError(
+        'The user belonging to this token does no longer exist.',
+        401
+      )
     );
+  }
 
   // Check if user changed password after the token was issued
-  if (currentUser.changedPasswordAfter(decoded.iat))
+  if (currentUser.changedPasswordAfter(decoded.iat)) {
     return next(
       new AppError('User recently changed password! Please log in again.', 401)
     );
+  }
 
   // Grant access to protected route
   req.user = currentUser;
+  res.locals.user = currentUser;
   next();
 });
+
+// Only for rendered pages, no errors!
+exports.isLoggedIn = async (req, res, next) => {
+  if (req.cookies.jwt) {
+    try {
+      // Verify token
+      const decoded = await promisify(jwt.verify)(
+        req.cookies.jwt,
+        process.env.JWT_SECRET
+      );
+
+      // Check if user still exists
+      const currentUser = await User.findById(decoded.id);
+      if (!currentUser) return next();
+
+      // Check if user changed password after the token was issued
+      if (currentUser.changedPasswordAfter(decoded.iat)) return next();
+
+      // There is a Loggedin User
+      res.locals.user = currentUser;
+      return next();
+    } catch (err) {
+      return next();
+    }
+  }
+  next();
+};
 
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
@@ -165,13 +209,13 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
   // Get user based on the token
-  const hashesdToken = crypto
+  const hashedToken = crypto
     .createHash('sha256')
     .update(req.params.token)
     .digest('hex');
 
   const user = await User.findOne({
-    passwordResetToken: hashesdToken,
+    passwordResetToken: hashedToken,
     passwordResetExpire: { $gt: Date.now() },
   });
 
