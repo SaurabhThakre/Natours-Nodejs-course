@@ -1,6 +1,7 @@
 # dependencies
 /node_modules
 *.env
+.cache/
 
 # IDEs and editors
 .eslintrc.json

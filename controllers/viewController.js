@@ -19,7 +19,6 @@ exports.getOverview = catchAsync(async (req, res, next) => {
 
 exports.getTour = catchAsync(async (req, res, next) => {
   // 1) Get the data, for the requested tour (including reviews and guides)
-  // console.log(req.params.slug);
   const tour1 = await Tour.find({ slug: req.params.slug }).populate({
     path: 'reviews',
     fields: 'review rating user',
@@ -55,11 +54,9 @@ exports.getAccount = (req, res) => {
 exports.getMyTours = catchAsync(async (req, res, next) => {
   // Find all bookings
   const bookings = await Booking.find({ user: req.user.id });
-  console.log(bookings);
   // Find tours with the returned IDs
   const tourIDs = bookings.map((el) => el.tour);
   const tours = await Tour.find({ _id: { $in: tourIDs } });
-  console.log(tours);
 
   res.status(200).render('overview', {
     title: 'My Tours',
