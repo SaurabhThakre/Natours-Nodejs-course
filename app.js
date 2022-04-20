@@ -27,8 +27,11 @@ app.set('views', path.join(__dirname, 'views'));
 // Serving static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Set security HTTP headers
+//Implementing CORS
 app.use(cors());
+app.options('*', cors());
+
+// Set security HTTP headers
 app.use(
   helmet({
     crossOriginEmbedderPolicy: false,
