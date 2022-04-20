@@ -16,9 +16,6 @@ const DB = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0
 mongoose.connect(DB).then(() => {
   console.log('DB connection successful!');
 });
-// .catch(() => {
-//   console.log('DB connection failed! 💥');
-// });
 
 const port = process.env.PORT || 3000;
 const server = app.listen(port, () => {
