@@ -28,7 +28,11 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 //Implementing CORS
-app.use(cors());
+app.use(
+  cors({
+    origin: '*',
+  })
+);
 app.options('*', cors());
 
 // Set security HTTP headers
